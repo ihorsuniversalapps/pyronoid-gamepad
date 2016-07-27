@@ -20,15 +20,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 NameServerProxy ns = null;
-                PyroProxy remoteobject = null;
+                PyroProxy batMover = null;
                 try {
                     ns = NameServerProxy.locateNS(null);
 
-                    remoteobject = new PyroProxy(ns.lookup("local.pyronoid"));
+                    batMover = new PyroProxy(ns.lookup("PYRONAME:local.pyronoid"));
 
                     while (true) {
                         Log.d("666", "run: Sent");
-                        remoteobject.call("move", 42);
+                        batMover.call("hello", 42);
                         Thread.sleep(1000);
                     }
 
@@ -37,8 +37,8 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 finally {
-                    if (remoteobject != null) {
-                        remoteobject.close();
+                    if (batMover != null) {
+                        batMover.close();
                     }
                     if (ns != null) {
                         ns.close();
