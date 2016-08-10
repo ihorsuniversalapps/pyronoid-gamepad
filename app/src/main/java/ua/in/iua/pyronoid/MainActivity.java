@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import net.razorvine.pyro.NameServerProxy;
+import net.razorvine.pyro.PyroException;
 import net.razorvine.pyro.PyroProxy;
 
 import java.io.IOException;
@@ -63,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
                             }
 
 
-                        } catch (IOException | InterruptedException e) {
+                        } catch (IOException | InterruptedException | PyroException e) {
                             e.printStackTrace();
                         } finally {
                             Toast.makeText(MainActivity.this, "Connection is closed", Toast.LENGTH_SHORT).show();
