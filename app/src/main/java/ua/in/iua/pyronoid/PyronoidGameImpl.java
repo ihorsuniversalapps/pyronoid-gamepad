@@ -17,13 +17,26 @@ import java.util.concurrent.Executors;
  */
 public class PyronoidGameImpl implements PyronoidGame {
 
+    private volatile ConnectionState mConnectionState = ConnectionState.DISCONNECTED;
     private PyroProxy mCommandSendProxy = null;
     private NameServerProxy mNameServer = null;
     private ExecutorService mCommandSendQueue = Executors.newSingleThreadExecutor();
 
     @Override
-    public void initPyroProxy(PyroProxyCallback callback) {
-        ProxyInitializer proxyInitializer = new ProxyInitializer(callback);
+    public void initPyroProxy(final PyroProxyCallback callback) {
+        ProxyInitializer proxyInitializer = new ProxyInitializer(new PyroProxyCallback() {
+            @Override
+            public void success(PyroServerDetails details) {
+                mConnectionState = ConnectionState.CONNECTED;
+                callback.success(details);
+            }
+
+            @Override
+            public void error(PyroError errors) {
+                mConnectionState = ConnectionState.DISCONNECTED;
+                callback.error(errors);
+            }
+        });
         proxyInitializer.execute();
     }
 
@@ -32,10 +45,18 @@ public class PyronoidGameImpl implements PyronoidGame {
         mCommandSendQueue.submit(new Runnable() {
             @Override
             public void run() {
+                if (mConnectionState == ConnectionState.DISCONNECTED) {
+                    ProxyInitializerResponse proxyInitializerResponse = connectToPyroServer();
+                    if (proxyInitializerResponse.getError() != null) {
+                        return;
+                    }
+                    mConnectionState = ConnectionState.CONNECTED;
+                }
+
                 try {
                     mCommandSendProxy.call("move_bat", pos);
                 } catch (IOException | PyroException | PickleException e) {
-                    // Currently ignoring
+                    mConnectionState = ConnectionState.DISCONNECTED;
                     e.printStackTrace();
                 }
             }
@@ -44,7 +65,25 @@ public class PyronoidGameImpl implements PyronoidGame {
 
     @Override
     public void restartGame() {
+        mCommandSendQueue.submit(new Runnable() {
+            @Override
+            public void run() {
+                if (mConnectionState == ConnectionState.DISCONNECTED) {
+                    ProxyInitializerResponse proxyInitializerResponse = connectToPyroServer();
+                    if (proxyInitializerResponse.getError() != null) {
+                        return;
+                    }
+                    mConnectionState = ConnectionState.CONNECTED;
+                }
 
+                try {
+                    mCommandSendProxy.call("restart_game");
+                } catch (IOException | PyroException | PickleException e) {
+                    mConnectionState = ConnectionState.DISCONNECTED;
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     @Override
@@ -57,11 +96,42 @@ public class PyronoidGameImpl implements PyronoidGame {
         }
     }
 
-    class ProxyIniterResponse {
+    @NonNull
+    private ProxyInitializerResponse connectToPyroServer() {
+        try {
+            if (mNameServer != null) {
+                mNameServer.close();
+            }
+            mNameServer = NameServerProxy.locateNS(null);
+        } catch (IOException | PyroException e) {
+            e.printStackTrace();
+            closeProxy();
+            return new ProxyInitializerResponse(null, PyroError.NAME_SERVER_ERROR);
+        }
+
+        try {
+            if (mCommandSendProxy != null) {
+                mCommandSendProxy.close();
+            }
+            mCommandSendProxy = new PyroProxy(mNameServer.lookup("PYRONAME:local.pyronoid"));
+        } catch (IOException | PyroException e) {
+            e.printStackTrace();
+            closeProxy();
+            return new ProxyInitializerResponse(null, PyroError.PYRO_CONNECTION_ERROR);
+        }
+        return new ProxyInitializerResponse(new PyroServerDetails(mCommandSendProxy.hostname), null);
+    }
+
+    private enum ConnectionState {
+        DISCONNECTED,
+        CONNECTED
+    }
+
+    class ProxyInitializerResponse {
         PyroServerDetails mServerDetails;
         PyroError mError;
 
-        public ProxyIniterResponse(PyroServerDetails serverDetails, PyroError error) {
+        public ProxyInitializerResponse(PyroServerDetails serverDetails, PyroError error) {
             mServerDetails = serverDetails;
             mError = error;
         }
@@ -75,7 +145,7 @@ public class PyronoidGameImpl implements PyronoidGame {
         }
     }
 
-    class ProxyInitializer extends AsyncTask<Void, Void, ProxyIniterResponse> {
+    class ProxyInitializer extends AsyncTask<Void, Void, ProxyInitializerResponse> {
 
         PyroProxyCallback mCallback;
 
@@ -84,32 +154,17 @@ public class PyronoidGameImpl implements PyronoidGame {
         }
 
         @Override
-        protected ProxyIniterResponse doInBackground(Void... voids) {
-            try {
-                mNameServer = NameServerProxy.locateNS(null);
-            } catch (IOException | PyroException e) {
-                e.printStackTrace();
-                closeProxy();
-                return new ProxyIniterResponse(null, PyroError.NAME_SERVER_ERROR);
-            }
-
-            try {
-                mCommandSendProxy = new PyroProxy(mNameServer.lookup("PYRONAME:local.pyronoid"));
-            } catch (IOException | PyroException e) {
-                e.printStackTrace();
-                closeProxy();
-                return new ProxyIniterResponse(null, PyroError.PYRO_CONNECTION_ERROR);
-            }
-            return new ProxyIniterResponse(new PyroServerDetails(mCommandSendProxy.hostname), null);
+        protected ProxyInitializerResponse doInBackground(Void... voids) {
+            return connectToPyroServer();
         }
 
         @Override
-        protected void onPostExecute(ProxyIniterResponse proxyIniterResponse) {
-            super.onPostExecute(proxyIniterResponse);
-            if (proxyIniterResponse.getServerDetails() != null) {
-                mCallback.success(proxyIniterResponse.getServerDetails());
+        protected void onPostExecute(ProxyInitializerResponse proxyInitializerResponse) {
+            super.onPostExecute(proxyInitializerResponse);
+            if (proxyInitializerResponse.getServerDetails() != null) {
+                mCallback.success(proxyInitializerResponse.getServerDetails());
             } else {
-                mCallback.error(proxyIniterResponse.getError());
+                mCallback.error(proxyInitializerResponse.getError());
             }
         }
     }

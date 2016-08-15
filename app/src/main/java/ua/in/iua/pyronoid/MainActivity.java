@@ -3,7 +3,8 @@ package ua.in.iua.pyronoid;
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
@@ -26,13 +27,35 @@ public class MainActivity extends AppCompatActivity {
         moveView = findViewById(R.id.vTouchView);
 
         mGame = new PyronoidGameImpl();
+    }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menuReconnect:
+                connectToServer();
+                break;
+            case R.id.menuRestart:
+                mGame.restartGame();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
 
+        connectToServer();
+    }
+
+    private void connectToServer() {
         final ProgressDialog dialog = new ProgressDialog(this);
         dialog.setMessage("Looking for Pyronoid game server...");
         dialog.show();
@@ -45,10 +68,8 @@ public class MainActivity extends AppCompatActivity {
                 moveView.setOnTouchListener(new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View view, MotionEvent motionEvent) {
-                        Log.d(TAG, "onTouch: ttt");
                         if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
                             final float curPosX = motionEvent.getX();
-                            Log.d(TAG, "onTouch: sss");
                             if (maxActivityWidth > 0) {
                                 mGame.moveBat(curPosX / (double) maxActivityWidth);
                                 return true;
