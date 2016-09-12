@@ -69,19 +69,7 @@ public class MainActivity extends AppCompatActivity {
             public void success(PyronoidGame.PyroServerDetails details) {
                 dialog.dismiss();
                 setTitle(String.format(Locale.getDefault(), "Connected to: %s", details.getHostname()));
-                moveView.setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View view, MotionEvent motionEvent) {
-                        if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
-                            final float curPosX = motionEvent.getX();
-                            if (maxActivityWidth > 0) {
-                                mGame.moveBat(curPosX / (double) maxActivityWidth);
-                                return true;
-                            }
-                        }
-                        return true;
-                    }
-                });
+                initViewTouchListener();
             }
 
             @Override
@@ -95,6 +83,22 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(MainActivity.this, "Pyro connection error.", Toast.LENGTH_LONG).show();
                         break;
                 }
+            }
+        });
+    }
+
+    private void initViewTouchListener() {
+        moveView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
+                    final float curPosX = motionEvent.getX();
+                    if (maxActivityWidth > 0) {
+                        mGame.moveBat(curPosX / (double) maxActivityWidth);
+                        return true;
+                    }
+                }
+                return true;
             }
         });
     }
@@ -113,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 maxActivityWidth = moveView.getMeasuredWidth();
+                initViewTouchListener();
             }
         });
     }

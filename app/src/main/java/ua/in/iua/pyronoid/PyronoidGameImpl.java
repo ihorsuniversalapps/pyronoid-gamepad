@@ -145,7 +145,7 @@ public class PyronoidGameImpl implements PyronoidGame {
         }
     }
 
-    class ProxyInitializer extends AsyncTask<Void, Void, ProxyInitializerResponse> {
+    private class ProxyInitializer extends AsyncTask<Void, Void, ProxyInitializerResponse> {
 
         PyroProxyCallback mCallback;
 
