@@ -29,6 +29,15 @@ public class MainActivity extends AppCompatActivity {
         moveView = findViewById(R.id.vTouchView);
 
         DaggerPyronoidGameComponent.builder().pyronoidGameModule(new PyronoidGameModule()).build().inject(this);
+
+        if (savedInstanceState == null) {
+            moveView.post(new Runnable() {
+                @Override
+                public void run() {
+                    connectToServer();
+                }
+            });
+        }
     }
 
     @Override
@@ -48,13 +57,6 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        connectToServer();
     }
 
     private void connectToServer() {
