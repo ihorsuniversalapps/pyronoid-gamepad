@@ -11,13 +11,15 @@ import android.widget.Toast;
 
 import java.util.Locale;
 
+import javax.inject.Inject;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "Pyronoid";
+    @Inject
+    public PyronoidGame mGame;
     private long maxActivityWidth = 0L;
     private View moveView;
-
-    private PyronoidGame mGame;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
         moveView = findViewById(R.id.vTouchView);
 
-        mGame = new PyronoidGameImpl();
+        DaggerPyronoidGameComponent.builder().pyronoidGameModule(new PyronoidGameModule()).build().inject(this);
     }
 
     @Override
