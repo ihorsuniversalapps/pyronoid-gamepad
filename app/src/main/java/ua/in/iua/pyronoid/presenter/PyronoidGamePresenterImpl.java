@@ -1,4 +1,4 @@
-package ua.in.iua.pyronoid;
+package ua.in.iua.pyronoid.presenter;
 
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
@@ -12,27 +12,37 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import ua.in.iua.pyronoid.view.PyronoidGameView;
+
 /**
  * Created by rusin on 11.08.16.
  */
-public class PyronoidGameImpl implements PyronoidGame {
+public class PyronoidGamePresenterImpl implements PyronoidGamePresenter {
 
+    public PyronoidGameView mGameView;
     private volatile ConnectionState mConnectionState = ConnectionState.DISCONNECTED;
     private PyroProxy mCommandSendProxy = null;
     private NameServerProxy mNameServer = null;
     private ExecutorService mCommandSendQueue = Executors.newSingleThreadExecutor();
 
+    public PyronoidGamePresenterImpl(@NonNull PyronoidGameView gameView) {
+        mGameView = gameView;
+    }
+
     @Override
     public void initPyroProxy(final PyroProxyCallback callback) {
+        mGameView.showProgressDialog("Looking for Pyronoid game server...");
         ProxyInitializer proxyInitializer = new ProxyInitializer(new PyroProxyCallback() {
             @Override
             public void success(PyroServerDetails details) {
+                mGameView.hideProgressDialog();
                 mConnectionState = ConnectionState.CONNECTED;
                 callback.success(details);
             }
 
             @Override
             public void error(PyroError errors) {
+                mGameView.hideProgressDialog();
                 mConnectionState = ConnectionState.DISCONNECTED;
                 callback.error(errors);
             }

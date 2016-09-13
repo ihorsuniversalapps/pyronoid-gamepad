@@ -1,9 +1,9 @@
-package ua.in.iua.pyronoid;
+package ua.in.iua.pyronoid.presenter;
 
 /**
  * Created by rusin on 11.08.16.
  */
-public interface PyronoidGame {
+public interface PyronoidGamePresenter {
     void initPyroProxy(PyroProxyCallback callback);
 
     void moveBat(double pos);
