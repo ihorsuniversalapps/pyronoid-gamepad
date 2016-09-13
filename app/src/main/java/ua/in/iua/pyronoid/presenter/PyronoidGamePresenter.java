@@ -6,11 +6,19 @@ package ua.in.iua.pyronoid.presenter;
 public interface PyronoidGamePresenter {
     void initPyroProxy(PyroProxyCallback callback);
 
+    ConnectionState connectionState();
+
     void moveBat(double pos);
 
     void restartGame();
 
     void closeProxy();
+
+    enum ConnectionState {
+        DISCONNECTED,
+        CONNECING,
+        CONNECTED
+    }
 
     enum PyroError {
         NAME_SERVER_ERROR,

@@ -9,7 +9,7 @@ import android.content.Context;
  */
 public class PyronoidGameViewImpl implements PyronoidGameView {
 
-    public Context mContext;
+    private Context mContext;
     private ProgressDialog mProgressDialog;
 
     public PyronoidGameViewImpl(Context context) {

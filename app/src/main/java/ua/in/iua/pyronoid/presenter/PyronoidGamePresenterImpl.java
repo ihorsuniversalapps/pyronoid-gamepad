@@ -19,7 +19,7 @@ import ua.in.iua.pyronoid.view.PyronoidGameView;
  */
 public class PyronoidGamePresenterImpl implements PyronoidGamePresenter {
 
-    public PyronoidGameView mGameView;
+    private PyronoidGameView mGameView;
     private volatile ConnectionState mConnectionState = ConnectionState.DISCONNECTED;
     private PyroProxy mCommandSendProxy = null;
     private NameServerProxy mNameServer = null;
@@ -31,23 +31,29 @@ public class PyronoidGamePresenterImpl implements PyronoidGamePresenter {
 
     @Override
     public void initPyroProxy(final PyroProxyCallback callback) {
+        mConnectionState = ConnectionState.CONNECING;
         mGameView.showProgressDialog("Looking for Pyronoid game server...");
         ProxyInitializer proxyInitializer = new ProxyInitializer(new PyroProxyCallback() {
             @Override
             public void success(PyroServerDetails details) {
-                mGameView.hideProgressDialog();
                 mConnectionState = ConnectionState.CONNECTED;
+                mGameView.hideProgressDialog();
                 callback.success(details);
             }
 
             @Override
             public void error(PyroError errors) {
-                mGameView.hideProgressDialog();
                 mConnectionState = ConnectionState.DISCONNECTED;
+                mGameView.hideProgressDialog();
                 callback.error(errors);
             }
         });
         proxyInitializer.execute();
+    }
+
+    @Override
+    public ConnectionState connectionState() {
+        return mConnectionState;
     }
 
     @Override
@@ -130,11 +136,6 @@ public class PyronoidGamePresenterImpl implements PyronoidGamePresenter {
             return new ProxyInitializerResponse(null, PyroError.PYRO_CONNECTION_ERROR);
         }
         return new ProxyInitializerResponse(new PyroServerDetails(mCommandSendProxy.hostname), null);
-    }
-
-    private enum ConnectionState {
-        DISCONNECTED,
-        CONNECTED
     }
 
     class ProxyInitializerResponse {

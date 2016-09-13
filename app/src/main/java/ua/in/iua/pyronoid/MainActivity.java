@@ -117,6 +117,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        mGameView.hideProgressDialog();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
 
