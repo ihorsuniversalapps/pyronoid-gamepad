@@ -44,7 +44,9 @@ public class PyronoidGamePresenterImpl implements PyronoidGamePresenter {
     @Override
     public void initPyroProxy() {
         mConnectionState = ConnectionState.CONNECING;
-        mGameView.showProgressDialog(MESSAGE_FIND_SERVER);
+        if (mGameView != null) {
+            mGameView.showProgressDialog(MESSAGE_FIND_SERVER);
+        }
         ProxyInitializer proxyInitializer = new ProxyInitializer(new PyroProxyCallback() {
             @Override
             public void success(PyroServerDetails details) {

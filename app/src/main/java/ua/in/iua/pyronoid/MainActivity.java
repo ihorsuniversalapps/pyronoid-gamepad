@@ -44,12 +44,7 @@ public class MainActivity extends AppCompatActivity implements PyronoidGameView 
         }
 
         if (savedInstanceState == null) {
-            moveView.post(new Runnable() {
-                @Override
-                public void run() {
-                    connectToServer();
-                }
-            });
+            connectToServer();
         }
     }
 
