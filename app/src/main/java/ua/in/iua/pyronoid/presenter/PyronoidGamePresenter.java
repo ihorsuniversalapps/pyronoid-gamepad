@@ -1,10 +1,18 @@
 package ua.in.iua.pyronoid.presenter;
 
+import ua.in.iua.pyronoid.view.PyronoidGameView;
+
 /**
+ * Pyronoid Game Presenter interface
  * Created by rusin on 11.08.16.
  */
 public interface PyronoidGamePresenter {
-    void initPyroProxy(PyroProxyCallback callback);
+
+    void bindView(PyronoidGameView view);
+
+    void unbindView();
+
+    void initPyroProxy();
 
     ConnectionState connectionState();
 

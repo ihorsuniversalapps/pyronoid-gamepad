@@ -15,43 +15,58 @@ import java.util.concurrent.Executors;
 import ua.in.iua.pyronoid.view.PyronoidGameView;
 
 /**
+ * Pyronoid game Presenter implementation
  * Created by rusin on 11.08.16.
  */
 public class PyronoidGamePresenterImpl implements PyronoidGamePresenter {
 
+    private static final String MESSAGE_FIND_SERVER = "Looking for Pyronoid game server...";
     private PyronoidGameView mGameView;
     private volatile ConnectionState mConnectionState = ConnectionState.DISCONNECTED;
     private PyroProxy mCommandSendProxy = null;
     private NameServerProxy mNameServer = null;
     private ExecutorService mCommandSendQueue = Executors.newSingleThreadExecutor();
 
-    public PyronoidGamePresenterImpl(@NonNull PyronoidGameView gameView) {
-        mGameView = gameView;
+    @Override
+    public void bindView(PyronoidGameView view) {
+        mGameView = view;
+        if (mConnectionState == ConnectionState.CONNECING) {
+            mGameView.showProgressDialog(MESSAGE_FIND_SERVER);
+        }
     }
 
     @Override
-    public void initPyroProxy(final PyroProxyCallback callback) {
+    public void unbindView() {
+        mGameView.hideProgressDialog();
+        mGameView = null;
+    }
+
+    @Override
+    public void initPyroProxy() {
         mConnectionState = ConnectionState.CONNECING;
-        mGameView.showProgressDialog("Looking for Pyronoid game server...");
+        mGameView.showProgressDialog(MESSAGE_FIND_SERVER);
         ProxyInitializer proxyInitializer = new ProxyInitializer(new PyroProxyCallback() {
             @Override
             public void success(PyroServerDetails details) {
                 mConnectionState = ConnectionState.CONNECTED;
-                mGameView.hideProgressDialog();
-                callback.success(details);
+                if (mGameView != null) {
+                    mGameView.hideProgressDialog();
+                    mGameView.onConnectedToGameServerSucceed(details);
+                }
             }
 
             @Override
-            public void error(PyroError errors) {
+            public void error(PyroError error) {
                 mConnectionState = ConnectionState.DISCONNECTED;
-                mGameView.hideProgressDialog();
-                callback.error(errors);
+                if (mGameView != null) {
+                    mGameView.hideProgressDialog();
+                    mGameView.onConnectedToGameServerFailed(error);
+                }
             }
         });
         proxyInitializer.execute();
     }
 
-    @Override
     public ConnectionState connectionState() {
         return mConnectionState;
     }

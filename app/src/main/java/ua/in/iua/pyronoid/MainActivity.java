@@ -1,5 +1,6 @@
 package ua.in.iua.pyronoid;
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
@@ -14,21 +15,18 @@ import javax.inject.Inject;
 
 import ua.in.iua.pyronoid.di.DaggerPyronoidGameComponent;
 import ua.in.iua.pyronoid.di.PyronoidGamePresenterModule;
-import ua.in.iua.pyronoid.di.PyronoidGameViewModule;
 import ua.in.iua.pyronoid.presenter.PyronoidGamePresenter;
 import ua.in.iua.pyronoid.view.PyronoidGameView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements PyronoidGameView {
     private static final String TAG = "Pyronoid";
 
     @Inject
     public PyronoidGamePresenter mGame;
 
-    @Inject
-    public PyronoidGameView mGameView;
-
     private long maxActivityWidth = 0L;
     private View moveView;
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,11 +35,13 @@ public class MainActivity extends AppCompatActivity {
 
         moveView = findViewById(R.id.vTouchView);
 
-        DaggerPyronoidGameComponent.builder()
-                .pyronoidGamePresenterModule(new PyronoidGamePresenterModule())
-                .pyronoidGameViewModule(new PyronoidGameViewModule(this))
-                .build()
-                .inject(this);
+        mGame = (PyronoidGamePresenter) getLastCustomNonConfigurationInstance();
+        if (mGame == null) {
+            DaggerPyronoidGameComponent.builder()
+                    .pyronoidGamePresenterModule(new PyronoidGamePresenterModule())
+                    .build()
+                    .inject(this);
+        }
 
         if (savedInstanceState == null) {
             moveView.post(new Runnable() {
@@ -51,6 +51,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+
+    @Override
+    public Object onRetainCustomNonConfigurationInstance() {
+        return mGame;
     }
 
     @Override
@@ -73,25 +78,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void connectToServer() {
-        mGame.initPyroProxy(new PyronoidGamePresenter.PyroProxyCallback() {
-            @Override
-            public void success(PyronoidGamePresenter.PyroServerDetails details) {
-                setTitle(String.format(Locale.getDefault(), "Connected to: %s", details.getHostname()));
-                initViewTouchListener();
-            }
-
-            @Override
-            public void error(PyronoidGamePresenter.PyroError errors) {
-                switch (errors) {
-                    case NAME_SERVER_ERROR:
-                        Toast.makeText(MainActivity.this, "Pyro name server not found.", Toast.LENGTH_LONG).show();
-                        break;
-                    case PYRO_CONNECTION_ERROR:
-                        Toast.makeText(MainActivity.this, "Pyro connection error.", Toast.LENGTH_LONG).show();
-                        break;
-                }
-            }
-        });
+        mGame.initPyroProxy();
     }
 
     private void initViewTouchListener() {
@@ -119,12 +106,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        mGameView.hideProgressDialog();
+        mGame.unbindView();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
+        mGame.bindView(this);
 
         moveView.post(new Runnable() {
             @Override
@@ -133,5 +122,39 @@ public class MainActivity extends AppCompatActivity {
                 initViewTouchListener();
             }
         });
+    }
+
+    @Override
+    public void showProgressDialog(String message) {
+        if (mProgressDialog == null) {
+            mProgressDialog = new ProgressDialog(this);
+        }
+        mProgressDialog.setMessage(message);
+        mProgressDialog.show();
+    }
+
+    @Override
+    public void hideProgressDialog() {
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
+    }
+
+    @Override
+    public void onConnectedToGameServerSucceed(PyronoidGamePresenter.PyroServerDetails details) {
+        setTitle(String.format(Locale.getDefault(), "Connected to: %s", details.getHostname()));
+        initViewTouchListener();
+    }
+
+    @Override
+    public void onConnectedToGameServerFailed(PyronoidGamePresenter.PyroError errors) {
+        switch (errors) {
+            case NAME_SERVER_ERROR:
+                Toast.makeText(MainActivity.this, "Pyro name server not found.", Toast.LENGTH_LONG).show();
+                break;
+            case PYRO_CONNECTION_ERROR:
+                Toast.makeText(MainActivity.this, "Pyro connection error.", Toast.LENGTH_LONG).show();
+                break;
+        }
     }
 }
